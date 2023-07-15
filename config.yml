@@ -1,0 +1,5 @@
+port: 2113
+loki_instances:
+  - http://192.168.1.16:3100
+clients:
+  - temperature
