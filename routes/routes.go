@@ -15,7 +15,7 @@ func GetRouter(configuration config.Config) *mux.Router {
 	})
 	for _, client := range configuration.Clients {
 		log.Printf("Registering route /%s\n", client)
-		router.Handle("/"+client, &logs.Controller{Context: client}).Methods(http.MethodPost)
+		router.Handle("/"+client, &logs.Controller{Context: client, Configuration: configuration}).Methods(http.MethodPost)
 	}
 	return router
 }

@@ -7,9 +7,14 @@ import (
 )
 
 type Config struct {
-	Port          int      `yaml:"port"`
-	LokiInstances []string `yaml:"loki_instances"`
-	Clients       []string `yaml:"clients"`
+	Port          int            `yaml:"port"`
+	LokiInstances []LokiInstance `yaml:"loki_instances"`
+	Clients       []string       `yaml:"clients"`
+}
+
+type LokiInstance struct {
+	URL   string `yaml:"url"`
+	Token string `yaml:"token"`
 }
 
 func readConfigFile() []byte {

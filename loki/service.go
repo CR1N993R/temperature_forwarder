@@ -3,41 +3,25 @@ package loki
 import (
 	"io"
 	"log"
+	"loki-log-creator/config"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 )
 
-func CheckLoki(lokiInstances []string) {
+func SendLogToLoki(logMessage string, client string, lokiInstances []config.LokiInstance) error {
 	for _, instance := range lokiInstances {
-		req, _ := http.NewRequest("GET", instance+"/ready", nil)
-		req.Header.Add("Content-Type", "application/json")
-
-		httpClient := http.Client{}
-		res, err := httpClient.Do(req)
-		if err != nil {
-			log.Println(err)
-			panic("Failed to start temperature forwarder unable to reach loki instance: " + instance + "!")
-		}
-		if res.StatusCode != http.StatusOK {
-			panic("Failed to start temperature forwarder unable to reach loki instance: " + instance + "!")
-		}
-	}
-}
-
-func SendLogToLoki(logString string, client string, lokiInstances []string) error {
-	logString = strings.ReplaceAll(logString, "\"", "\\\"")
-	logString = strings.ReplaceAll(logString, "\n", "")
-	timeStamp := int(time.Now().UnixNano())
-	payload := strings.NewReader(`{"streams": [{"stream": {"temperature_forwarder": "` + client + `"},"values": [["` + strconv.Itoa(timeStamp) + `", "` + logString + `" ]]}]}`)
-	for _, instance := range lokiInstances {
-		req, err := http.NewRequest("POST", instance+"/loki/api/v1/push", payload)
+		url := instance.URL + "/loki/api/v1/push"
+		req, err := http.NewRequest(http.MethodPost, url, getPayload(client, logMessage))
 		if err != nil {
 			log.Println(err)
 			return err
 		}
 		req.Header.Add("Content-Type", "application/json")
+		if instance.Token != "" {
+			req.Header.Add("Authorization", "Bearer "+instance.Token)
+		}
 
 		httpClient := http.Client{}
 		res, err := httpClient.Do(req)
@@ -57,4 +41,11 @@ func SendLogToLoki(logString string, client string, lokiInstances []string) erro
 		}
 	}
 	return nil
+}
+
+func getPayload(client string, log string) io.Reader {
+	log = strings.ReplaceAll(log, "\"", "\\\"")
+	log = strings.ReplaceAll(log, "\n", "")
+	timeStamp := int(time.Now().UnixNano())
+	return strings.NewReader(`{"streams": [{"stream": {"loki_log_forwarder": "` + client + `"},"values": [["` + strconv.Itoa(timeStamp) + `", "` + log + `" ]]}]}`)
 }
